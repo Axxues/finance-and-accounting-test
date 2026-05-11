@@ -1,0 +1,241 @@
+Finance and Accounting Proposal
+
+1. User Roles & Permissions
+To maintain VAPT-certified security and proper separation of duties, you'll need specific roles:
+Finance Manager / CFO: Full access to all modules, dashboards, and final approval for financial reports and bank reconciliations.
+General Accountant: Access to the General Ledger (GL), manual journal entries, and financial report generation.
+AR (Accounts Receivable) Clerk: Access to create invoices, record incoming payments (tuition, bulk POS sales), and view AR aging reports.
+AP (Accounts Payable) Clerk: Access to encode vendor bills, process payroll disbursement vouchers, and queue payments.
+2. Core Processes (Workflows)
+Using Likha ERP's visual workflow builder, you will design the following paths:
+The Revenue Cycle (AR): Student Enrollment/POS Sale -> System Generates Invoice/Receipt -> Payment Collected -> System Auto-Posts to GL.
+The Expenditure Cycle (AP): Purchase Order/Payroll Approved -> Vendor Bill/Payroll Voucher Created -> Payment Disbursed -> System Auto-Posts to GL.
+The Reconciliation Process: Bank Statement Uploaded -> Match against Cash/Check records in Likha -> Resolve Discrepancies -> Finalize Period.
+Month-End Close: Lock AR/AP for the month -> Run depreciation/adjusting entries -> Generate Balance Sheet & P&L.
+3. Necessary Forms (Data Capture)
+These are the drag-and-drop interfaces your team will use for manual data entry or overriding system data:
+Manual Journal Entry Form: For the Accountant to input adjustments (debits/credits, date, description, account codes).
+Customer Billing / Tuition Form: Captures student details, fee breakdown, and due dates.
+Official Receipt (Collection) Form: Captures amount received, payment method (Cash, Bank Transfer, Check), and the specific AR invoice it pays off.
+Vendor Bill / Expense Form: Captures supplier details, invoice number, expense category, and amount due.
+Payment Voucher Form: Used by AP to authorize cash out for payroll or suppliers.
+Bank Deposit / Transfer Form: To record movement of cash from the cash register/school office to the bank.
+4. Recommended Automations
+This is where Likha ERP's integration capabilities will shine, eliminating manual double-entry:
+POS to GL Sync: At the end of each day, automate a consolidated Journal Entry that debits Cash/Bank and credits Sales Revenue based on the POS totals.
+School System to AR Sync: When a student enrolls in the School System, automatically trigger the creation of an AR Invoice for their tuition and fees.
+Payroll to AP Sync: When the HR/Payroll system finalizes the payroll period, automatically generate an AP Voucher for the total salary payout.
+Automated Payment Reminders: Set up a trigger to automatically email/SMS parents or clients 3 days before an AR invoice (tuition) is due.
+5. Visualized Dashboards
+You can use Likha ERP's dashboard builder to create custom views for the different roles:
+CFO "Command Center" Dashboard: * Real-time Profit & Loss (P&L) summary graph.
+Current Cash Balance (Cash Management).
+Net Income month-over-month bar chart.
+Accounts Receivable Dashboard:
+Total Outstanding Receivables.
+AR Aging Pie Chart (Current, 30 days, 60 days, 90+ days overdue).
+Top 10 Unpaid Student Accounts.
+Accounts Payable Dashboard:
+Upcoming Bills to Pay (next 7 days).
+Total Liabilities vs. Available Cash.
+Pending Payroll disbursements.
+
+
+
+1. Core Backbone: General Ledger (GL)
+The GL is the central repository. Every financial transaction in AR, AP, and Cash Management will eventually flow into these tables as debits and credits.
+Table: ChartOfAccounts (COA)
+AccountID (PK)
+AccountCode (e.g., "1010", "4010")
+AccountName (e.g., "Cash in Bank", "Tuition Revenue")
+AccountType (Asset, Liability, Equity, Revenue, Expense)
+IsActive (Boolean)
+Table: JournalEntry
+JournalID (PK)
+TransactionDate (Date)
+ReferenceNumber (String - links to POS, School System, or Payroll ID)
+Description (Text)
+Status (Draft, Posted, Void)
+Table: JournalEntry_Line
+LineID (PK)
+JournalID (FK -> JournalEntry_Header)
+AccountID (FK -> ChartOfAccounts)
+DebitAmount (Decimal)
+CreditAmount (Decimal)
+Relationship: 1-to-Many from Header to Lines. (Every entry must have at least two lines where Total Debits = Total Credits).
+
+2. The Revenue Cycle: Accounts Receivable (AR)
+This captures money owed to the business from the School System and POS.
+Table: Customers (Students, Parents, or Corporate Clients)
+CustomerID (PK)
+CustomerName (String)
+CustomerType (Student, Walk-in, Corporate)
+ExternalReferenceID (String - linking to the School System's Student ID)
+Table: AR_Invoice
+InvoiceID (PK)
+CustomerID (FK -> Customers)
+IssueDate (Date)
+DueDate (Date)
+TotalAmount (Decimal)
+Status (Unpaid, Partially Paid, Paid)
+JournalID (FK -> JournalEntry_Header - created upon posting)
+Table: AR_PaymentReceipt
+ReceiptID (PK)
+InvoiceID (FK -> AR_Invoice)
+PaymentDate (Date)
+AmountPaid (Decimal)
+PaymentMethod (Cash, Bank Transfer, Check)
+BankAccountID (FK -> BankAccounts - where the money went)
+JournalID (FK -> JournalEntry_Header - created upon collection)
+
+3. The Expenditure Cycle: Accounts Payable (AP)
+This handles money going out, catching data from the Payroll system and vendor purchases.
+Table: Vendors (Suppliers, Employees for Payroll, Government Agencies)
+VendorID (PK)
+VendorName (String)
+VendorType (Supplier, Employee, Govt_Compliance)
+Table: AP_Bill
+BillID (PK)
+VendorID (FK -> Vendors)
+BillDate (Date)
+DueDate (Date)
+TotalAmount (Decimal)
+ExpenseAccountID (FK -> ChartOfAccounts - default expense category)
+Status (Pending Approval, Approved, Paid)
+JournalID (FK -> JournalEntry_Header - created upon approval)
+Table: AP_DisbursementVoucher
+VoucherID (PK)
+BillID (FK -> AP_Bill)
+DisbursementDate (Date)
+AmountPaid (Decimal)
+PaymentMethod (Check, Bank Transfer)
+BankAccountID (FK -> BankAccounts - where the money came from)
+JournalID (FK -> JournalEntry_Header - created upon payout)
+
+4. Cash Management & Reconciliation
+This tracks the actual physical and bank cash flow.
+Table: BankAccounts
+BankAccountID (PK)
+BankName (String)
+AccountNumber (String)
+GL_AccountID (FK -> ChartOfAccounts - links the bank to the specific GL Asset account)
+CurrentBalance (Decimal)
+Table: BankTransactions (For reconciliation purposes)
+BankTxnID (PK)
+BankAccountID (FK -> BankAccounts)
+TransactionDate (Date)
+Type (Deposit, Withdrawal, Fee)
+Amount (Decimal)
+IsReconciled (Boolean)
+MatchedSystemRecordID (String - links to ReceiptID or VoucherID)
+How the Automation Flow Connects the ERD:
+School System triggers AR: A student enrolls. The system automatically INSERTS a record into AR_Invoice.
+Invoice Posts to GL: The system triggers an INSERT into JournalEntry_Header and JournalEntry_Line (Debit: Accounts Receivable, Credit: Tuition Revenue).
+Parent Pays: An INSERT is made into AR_PaymentReceipt.
+Payment Posts to GL: The system triggers another INSERT into JournalEntry_Header and JournalEntry_Line (Debit: Cash in Bank, Credit: Accounts Receivable).
+
+
+1. General Ledger (GL) Tables
+These tables act as the core backbone of the system, where all financial transactions eventually flow to ensure double-entry accounting.
+ChartOfAccounts: This is your master list of all accounting categories. It is used to validate incoming account IDs and categorize them properly (e.g., Asset, Liability, Equity, Revenue, Expense).
+JournalEntry_Header: This table creates the parent "shell" of a financial transaction. It is used to record the overarching details like the transaction date, the status (Draft, Posted), and a reference number linking back to the source action (like a POS or Payroll ID).
+JournalEntry_Line: This table holds the actual money data. It stores the child records for the header, mapping specific DebitAmount and CreditAmount values to an AccountID. Every header must have at least two of these line records to ensure debits equal credits.
+2. Accounts Receivable (AR) Tables
+This module captures the incoming revenue cycle, tracking money owed to the school or business.
+Customers: Used to store the profiles of entities that owe you money, such as students, parents, or corporate clients. It also links to external identifiers like a School System's Student ID.
+AR_Invoice: This table records specific bills generated for customers. It captures the issue and due dates, total amounts, unpaid/paid status, and links to the GL journal entry created when the invoice is posted.
+AR_PaymentReceipt: Used to record the actual collection of money. It tracks the payment date, the amount paid, the payment method used (Cash, Check, Bank Transfer), which bank account received the funds, and the specific invoice it pays off.
+3. Accounts Payable (AP) Tables
+This module handles the expenditure cycle, catching data for money going out of the business.
+Vendors: Used to store the profiles of entities the business owes money to, including suppliers, employees (for payroll), and government agencies.
+AP_Bill: This table records the financial obligations to vendors. It captures bill and due dates, the default expense category from the Chart of Accounts, the approval status, and the total amount due.
+AP_DisbursementVoucher: Used to authorize and record actual cash payouts. It captures the date the money left, the payment method, the specific bank account it was drawn from, and links back to the bill it pays.
+4. Cash Management Tables
+These tables track actual physical cash flow and are used to ensure system numbers match reality.
+BankAccounts: Used to store the details of physical bank accounts (Bank Name, Account Number, Current Balance) and links them to their specific Asset account in the GL.
+BankTransactions: This table is specifically used for the reconciliation process. It tracks external bank deposits, withdrawals, and fees, allowing the Finance Manager to match them against internal system records (like Receipts or Vouchers) to resolve discrepancies.
+
+
+1. The Revenue Cycle Flow (AR)
+This flow tracks incoming money from students or customers into your bank.
+[ Trigger ] 
+Student enrolls in the School System OR a daily POS Sale occurs.     
+↓ [ System Action ] 
+Likha ERP automatically generates an AR Invoice or Receipt for tuition/fees.     
+↓ [ GL Automation 1 ] 
+The system automatically posts a Journal Entry. 
+Debit: Accounts Receivable 
+Credit: Tuition / Sales Revenue 
+↓
+[ Collection ] The AR Clerk collects the payment (via Cash, Bank Transfer, or Check) and encodes it using the Official Receipt Form.    
+ ↓ [ GL Automation 2 ] 
+The system automatically posts the collection to the GL. 
+Debit: Cash in Bank 
+Credit: Accounts Receivable 
+
+2. The Expenditure Cycle Flow (AP)
+This flow tracks money going out to pay suppliers and employees.
+[ Trigger ] HR/Payroll period is finalized OR a Purchase Order is approved.    
+ ↓ [ System Action ] 
+Likha ERP generates an AP Bill or a Payroll Disbursement Voucher.     
+↓ [ GL Automation 1 ] The system automatically posts a Journal Entry upon bill approval. 
+Debit: Specific Expense Account 
+Credit: Accounts Payable
+↓ [ Disbursement ] The AP Clerk authorizes cash-out using the Payment Voucher Form.     
+↓ [ GL Automation 2 ] The system automatically posts the payout to the GL. 
+Debit: Accounts Payable
+Credit: Cash in Bank 
+
+3. Reconciliation & Month-End Flow
+This flow ensures the physical cash matches the system records and closes out the period for reporting.
+[ Step 1: Bank Reconciliation ] Upload the external Bank Statement into the system.     
+↓
+ Match the external bank data against Likha's internal Bank Transactions (Receipts and Vouchers).     
+↓ 
+CFO / Finance Manager reviews and resolves any discrepancies. 
+[ Step 2: Month-End Close ] Lock the AR and AP modules for the completed month.    
+ ↓ 
+General Accountant inputs adjusting entries (like depreciation) using the Manual Journal Entry Form.    
+ ↓ [ Output ] 
+System generates the finalized Balance Sheet and Profit & Loss (P&L) dashboards. 
+
+//------------------------------------------------
+Here is the step-by-step flow of information, categorized by the user interacting with it:
+1. The Revenue Flow: Accounts Receivable (AR) Clerk
+The AR Clerk is responsible for managing incoming money and ensuring student/customer accounts are up to date.
+Step 1: Invoicing (The Obligation)
+Interaction: The AR Clerk uses the Customer Billing / Tuition Form to capture student details, fee breakdowns, and due dates. (Note: This step is bypassed if the School System automatically syncs the enrollment ).
+Table Flow: Data is saved into the Customers and AR_Invoice tables.
+GL Automation: The system automatically pushes a record to the JournalEntry_Header and Line tables (Debit: Accounts Receivable, Credit: Tuition Revenue).
+Step 2: Collection (The Payment)
+Interaction: When a parent pays via cash, check, or transfer, the AR Clerk uses the Official Receipt (Collection) Form to record the payment method and link it to the specific invoice.
+Table Flow: Data is saved into the AR_PaymentReceipt table.
+GL Automation: The system auto-posts to the GL (Debit: Cash in Bank, Credit: Accounts Receivable).
+2. The Expenditure Flow: Accounts Payable (AP) Clerk
+The AP Clerk handles money going out, managing vendor obligations and payroll.
+Step 1: Billing (The Obligation)
+Interaction: The AP Clerk uses the Vendor Bill / Expense Form to encode supplier details, invoice numbers, and the expense category. (Note: Payroll bills are auto-generated when HR finalizes a period ).
+Table Flow: Data is saved into the Vendors and AP_Bill tables.
+GL Automation: Upon approval, the system auto-posts to the GL (Debit: Specific Expense Account, Credit: Accounts Payable).
+Step 2: Disbursement (The Payout)
+Interaction: To release funds, the AP Clerk uses the Payment Voucher Form to authorize the cash-out.
+Table Flow: Data is saved into the AP_DisbursementVoucher table.
+GL Automation: The system auto-posts to the GL (Debit: Accounts Payable, Credit: Cash in Bank).
+3. The Central Hub: General Accountant
+The General Accountant does not usually touch the day-to-day AR or AP forms. Instead, they manage the overarching General Ledger (GL) and handle exceptions.
+Step 1: Adjustments & Corrections
+Interaction: If a mistake was made, or if month-end depreciation needs to be recorded, the Accountant uses the Manual Journal Entry Form to directly input debits, credits, and account codes.
+Table Flow: This manually inserts data directly into the JournalEntry_Header and JournalEntry_Line tables.
+Step 2: Month-End Close
+Interaction: The Accountant locks the AR and AP modules to prevent backdating, runs their final adjusting entries, and generates the Balance Sheet and P&L.
+4. The Oversight Flow: Finance Manager / CFO
+The CFO has full access to all modules and provides final approvals and reconciliations.
+Step 1: Bank Reconciliation
+Interaction: The CFO uploads the external Bank Statement into the system.
+Table Flow: The uploaded data populates the BankTransactions table.
+Action: The CFO matches these external bank records against Likha's internal records (AR_PaymentReceipt and AP_DisbursementVoucher) to resolve any missing funds or discrepancies.
+Step 2: Command Center Dashboards
+Interaction: The CFO relies on the automated dashboards to view the real-time P&L, Cash Balance, and Net Income.
+Since you are building these drag-and-drop interfaces in Likha ERP, would you like to map out the specific data fields required for the Manual Journal Entry Form or the Official Receipt Form next?
+
+
