@@ -1,6 +1,6 @@
-import React from 'react';
+
 import { useTickets } from '../../context/TicketContext';
-import { CheckCircle, Calendar, User, AlertCircle } from 'lucide-react';
+import { CheckCircle, Calendar, AlertCircle } from 'lucide-react';
 
 export const TicketHistory = () => {
   const { ticketHistory } = useTickets();

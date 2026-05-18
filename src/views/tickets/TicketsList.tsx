@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTickets } from '../../context/TicketContext';
 import type { TicketStatus } from '../../context/TicketContext';
-import { Plus, Clock, AlertCircle, CheckCircle2, User, Calendar } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle2, User, Calendar } from 'lucide-react';
 
 export const TicketsList = () => {
   const { tickets, addTicket, updateTicketStatus } = useTickets();
