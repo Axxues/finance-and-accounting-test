@@ -10,7 +10,10 @@ import {
   Briefcase,
   Download,
   Building,
-  UserCircle
+  UserCircle,
+  Ticket,
+  History,
+  Activity
 } from 'lucide-react';
 import { useAccounting } from '../context/AccountingContext';
 import type { Role } from '../context/AccountingContext';
@@ -72,6 +75,11 @@ export const MainLayout = () => {
               <NavItem to="/reports/balance-sheet" icon={<BookOpen size={20} />} label="Balance Sheet" />
             </>
           )}
+
+          <div className="px-4 mt-6 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ticketing System</div>
+          <NavItem to="/tickets/dashboard" icon={<Activity size={20} />} label="Tickets Dashboard" />
+          <NavItem to="/tickets/active" icon={<Ticket size={20} />} label="Active Tickets" />
+          <NavItem to="/tickets/history" icon={<History size={20} />} label="Ticket History" />
         </nav>
       </aside>
 

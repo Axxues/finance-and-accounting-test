@@ -11,11 +11,16 @@ import { VendorsList } from './views/ap/VendorsList';
 import { BillsList } from './views/ap/BillsList';
 import { IncomeStatement } from './views/reports/IncomeStatement';
 import { BalanceSheet } from './views/reports/BalanceSheet';
+import { TicketProvider } from './context/TicketContext';
+import { TicketDashboard } from './views/tickets/TicketDashboard';
+import { TicketsList } from './views/tickets/TicketsList';
+import { TicketHistory } from './views/tickets/TicketHistory';
 
 function App() {
   return (
     <AccountingProvider>
-      <Router>
+      <TicketProvider>
+        <Router>
         <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Dashboard />} />
@@ -29,9 +34,14 @@ function App() {
             <Route path="ap/bills" element={<BillsList />} />
             <Route path="reports/income-statement" element={<IncomeStatement />} />
             <Route path="reports/balance-sheet" element={<BalanceSheet />} />
+            
+            <Route path="tickets/dashboard" element={<TicketDashboard />} />
+            <Route path="tickets/active" element={<TicketsList />} />
+            <Route path="tickets/history" element={<TicketHistory />} />
           </Route>
         </Routes>
       </Router>
+      </TicketProvider>
     </AccountingProvider>
   );
 }
